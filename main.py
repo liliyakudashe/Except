@@ -1,29 +1,25 @@
 class InvalidAgeError(Exception):
-
-    def __init__(self, massage='Возраст клиента должен быть от 18 до 75 лет'):
-        self.massage = massage
-        super().__init__(self.massage)
-
-
-class LoanLimitError(Exception):
-
-    def __init__(self, massage='Запрашиваемая сумма превышает лимит'):
-        self.massage = massage
-        super().__init__(self.massage)
+    def __init__(self, message='Возраст клиента должен быть от 18 до 75'):
+        self.message = message
+        super().__init__(self.message)
 
 
-class InvalidRepayment(Exception):
+class LoanLimitExceededError(Exception):
+    def __init__(self, message='Запрошенная сумма превышает лимит'):
+        self.message = message
+        super().__init__(self.message)
 
-    def __init__(self, massage='Погашение не может привышать оставшийся долг'):
-        self.massage = massage
-        super().__init__(self.massage)
+
+class InvalidRepaymentError(Exception):
+    def __init__(self, message='Погашение не может превышать оставшийся долг'):
+        self.message = message
+        super().__init__(self.message)
 
 
-class LoanFountError(Exception):
-
-    def __init__(self, massage='Кредит данным ID не найден'):
-        self.massage = massage
-        super().__init__(self.massage)
+class LoanNotFoundError(Exception):
+    def __init__(self, message='Кредит с данным ID не найден'):
+        self.message = message
+        super().__init__(self.message)
 
 
 class Client:
@@ -41,20 +37,20 @@ class Client:
 
 class Loan:
 
-    MAX_AMOUNT = 500000
+    MAX_AMOUNT = 500_000
 
     def __init__(self, loan_id, amount, interest_rate):
         if amount > Loan.MAX_AMOUNT:
-            raise LoanLimitError()
+            raise LoanLimitExceededError()
         self.loan_id = loan_id
         self.amount = amount
         self.interest_rate = interest_rate
-        self.remaunt_balans = amount
+        self.remaining_balance = amount
 
     def make_repayment(self, amount):
-        if amount > self.remaunt_balans:
-            raise InvalidRepayment()
-        self.remaunt_balans -= amount
+        if amount > self.remaining_balance:
+            raise InvalidRepaymentError()
+        self.remaining_balance -= amount
 
 
 class CreditSystem:
@@ -65,117 +61,86 @@ class CreditSystem:
     def add_client(self, client):
         self.clients[client.name] = client
 
-    def log_operation(self, massage):
+    def log_operation(self, message):
         try:
             with open('operation_log.txt', 'a', encoding='utf-8') as file:
-                file.write(massage + '\n')
+                file.write(message + '\n')
         except Exception as e:
-            print(f'Ошибка записи в журнал: {e}')
+            print(f'Ошибка записи в журнал {e}')
 
     def issue_loan(self, client_name, loan_id, amount, interest_rate):
-        massage = ''
+        message = ''
         try:
             if client_name not in self.clients:
                 raise ValueError('Клиент не найден')
 
             client = self.clients[client_name]
             loan = Loan(loan_id, amount, interest_rate)
-            client.add_loan(loan)
-            massage = f'Кредит на сумму {amount} выдан клиенту {client_name}'
-            print(massage)
-        except LoanLimitError as e:
-            massage = f'Оштбка при выдаче кредита для {client_name} {e.massage}'
-            print(massage)
-        except ValueError as e:
-            massage = f'Ошибка {e}'
-            print(massage)
-        finally:
-            self.log_operation(massage)
 
+            client.add_loan(loan)
+            message = f'Кредит на сумму {amount} выдан клиенту {client_name}'
+            print(message)
+        except LoanLimitExceededError as e:
+            message = f'Ошибка при выдаче кредита для {client_name} {e.message}'
+            print(message)
+        except ValueError as e:
+            message = f'Ошибка {e}'
+            print(message)
+        finally:
+            self.log_operation(message)
 
     def repay_loan(self, client_name, loan_id, amount):
-        massage = ''
+        message = ''
         try:
             if client_name not in self.clients:
                 raise ValueError('Клиент не найден')
 
             client = self.clients[client_name]
             loan = next((l for l in client.loans if l.loan_id == loan_id), None)
+
             if loan is None:
-                raise LoanFountError
+                raise LoanNotFoundError()
+
             loan.make_repayment(amount)
-            massage = f'Платёж на сумму {amount} внесён для кредита {loan_id}'
-        except LoanFountError as e:
-            massage = f'Ошибка {e.massage}'
-            print(massage)
-        except InvalidRepayment as e:
-            massage = f'Ошибка при погашении кредита: {e.massage}'
-            print(massage)
+            message = f'Платёж на сумму {amount} всесён для кредита {loan_id}'
+            print(message)
+        except LoanNotFoundError as e:
+            message = f'Ошибка {e.message}'
+            print(message)
+        except InvalidRepaymentError as e:
+            message = f'Ошибка при погашении кредита {e.message}'
+            print(message)
         finally:
-            self.log_operation(massage)
+            self.log_operation(message)
 
 
 credit_system = CreditSystem()
-
 try:
-    client1 = Client('Иванов Иван', 25)
-    credit_system.add_client(client1)
+    client = Client('Иванов Иван', 25)
+    credit_system.add_client(client)
 except InvalidAgeError as e:
-    print(f'Ошибка {e.massage}')
+    print(f'Ошибка {e.message}')
 
 try:
-    credit_system.issue_loan('Иванов Иван', 'LN001', 30000, 10)
-    credit_system.issue_loan('Иванов Иван', 'LN001', 6000000, 10)
-except LoanLimitError as e:
-    print(f'Ошибка {e.massage}')
+    credit_system.issue_loan('Иванов Иван', 'LN001', 30_000, 10)
+    credit_system.issue_loan('Иванов Иван', 'LN002', 600_000, 10)
+except LoanLimitExceededError as e:
+    print(f'Ошибка {e.message}')
 
 try:
-    credit_system.repay_loan('Иванов Иван', 'LN001', 1000)
-    credit_system.repay_loan('Иванов Иван', 'LN001', 40000)
-except LoanFountError as e:
-    print(f'Ошибка {e.massage}')
-except InvalidRepayment as e:
-    print(f'Ошибка {e.massage}')
+    credit_system.repay_loan('Иванов Иван', 'LN001', 10_000)
+    credit_system.repay_loan('Иванов Иван', 'LN001', 40_000)
+except LoanNotFoundError as e:
+    print(f'Ошибка {e.message}')
+except InvalidRepaymentError as e:
+    print(f'Ошибка {e.message}')
 
 try:
     with open('operation_log.txt', 'r', encoding='utf-8') as file:
-        print('Содержимое журнала операций')
+        print('Содержимое журнала операций ')
         print(file.read())
 except FileNotFoundError:
     print('Файл журнала не найден')
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
