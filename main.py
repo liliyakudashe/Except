@@ -1,8 +1,8 @@
 class InvalidAgeError(Exception):
-    def __init__(self, message='Возраст клиента должен быть от 18 до 75'):
+    def __init__(self, message='Возраст клиента должен быть от от 18 до 75'):
         self.message = message
         super().__init__(self.message)
-
+        
 
 class LoanLimitExceededError(Exception):
     def __init__(self, message='Запрошенная сумма превышает лимит'):
@@ -17,7 +17,7 @@ class InvalidRepaymentError(Exception):
 
 
 class LoanNotFoundError(Exception):
-    def __init__(self, message='Кредит с данным ID не найден'):
+    def __init__(self, message='Кредит с данными ID не найден'):
         self.message = message
         super().__init__(self.message)
 
@@ -76,12 +76,11 @@ class CreditSystem:
 
             client = self.clients[client_name]
             loan = Loan(loan_id, amount, interest_rate)
-
             client.add_loan(loan)
             message = f'Кредит на сумму {amount} выдан клиенту {client_name}'
             print(message)
         except LoanLimitExceededError as e:
-            message = f'Ошибка при выдаче кредита для {client_name} {e.message}'
+            message = f'Ошибка при выдаче кридита для клиента {client_name} {e.message}'
             print(message)
         except ValueError as e:
             message = f'Ошибка {e}'
@@ -100,9 +99,8 @@ class CreditSystem:
 
             if loan is None:
                 raise LoanNotFoundError()
-
             loan.make_repayment(amount)
-            message = f'Платёж на сумму {amount} всесён для кредита {loan_id}'
+            message = f'Платёж на сумму {amount} внесён для кредита {loan_id}'
             print(message)
         except LoanNotFoundError as e:
             message = f'Ошибка {e.message}'
@@ -115,6 +113,7 @@ class CreditSystem:
 
 
 credit_system = CreditSystem()
+
 try:
     client = Client('Иванов Иван', 25)
     credit_system.add_client(client)
@@ -141,6 +140,8 @@ try:
         print(file.read())
 except FileNotFoundError:
     print('Файл журнала не найден')
+
+
 
 
 
